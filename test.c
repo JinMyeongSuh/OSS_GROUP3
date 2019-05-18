@@ -7,11 +7,11 @@ typedef enum _type_t {
         OBJECT = 1,
         ARRAY = 2,
         STRING =3,
-        PRIMITIVE = 4;
+        PRIMITIVE = 4
 } type_t;
 
 typedef struct _tok_t{
-        enum type_t type;
+        type_t type;
         int start;
         int end;
         int size; // end - start + 1
@@ -28,21 +28,66 @@ int main(int argc, char **argv)
                 return -1;
         }
 
-	/*tok_t* tok;
+	int size = 0;
+	char* ref = NULL;
+	tok_t* tok = NULL
 
-	if(getc(fp) == '"')
-	{
-		{
-			tok = malloc(sizeof(tok_t));
-			tok[0].start = 0;
-			tok[0].end = 0;
-			tok[0].size = 0;
-			tok[0].size++
-		}
-	}
-	*/
-        
-	if(fgetc(fp)
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+
+	ref = malloc(sizeof(char)*(size + 1));
+	
+	fseek(fp, 0, SEEK_SET);
+
+	fread(ref, size, sizeof(char), fp);
+
+	printf("%s\n", ref);
+
+
+	free(ref);
 
         fclose(fp);
 }
+/*
+void parseJSON(char* ref, int size, tok_t* tok)
+{
+	int v_size = 0;
+
+	for(int i = 0; i < size; i++)
+	{
+		if(ref[0] == '{')
+		{
+			printf("Syntax error!");
+			return;
+		}
+	
+		switch(ref[i])
+		{
+		case '"':
+		{
+			tok = malloc(sizeof(tok));
+			tok[i].start = i + 1;
+			
+			if((strchr(tok[i].start, '"') - ref) > (strchr(tok[i].start, ':') - ref) || strchr(tok[i].start, '"') == NULL)
+			{
+				printf("Syntax error!");
+				return;
+			}
+			else
+				tok[i].end = strchr(tok[i].start, '"') - ref;
+
+			v_size = tok[i].start - tok[i].end + 1;
+			
+			tok[i].value = malloc(sizeof(char)*v_size);
+
+
+			for(int j = 0; j < v_size; j++)
+			{
+				tok[i].value + j = ref[tok[i].start + j];
+			}
+
+			i = i + v_size;
+		}
+		}
+	}
+}*/
