@@ -15,7 +15,7 @@ typedef struct _tok_t{
         int start;
         int end;
         int size; // end - start + 1
-	char* value;
+	//char* value;
 } tok_t;
 
 int main(int argc, char **argv)
@@ -48,10 +48,10 @@ int main(int argc, char **argv)
 
         fclose(fp);
 }
-/*
 void parseJSON(char* ref, int size, tok_t* tok)
 {
 	int v_size = 0;
+	int numOftok = 0;
 
 	for(int i = 0; i < size; i++)
 	{
@@ -65,7 +65,7 @@ void parseJSON(char* ref, int size, tok_t* tok)
 		{
 		case '"':
 		{
-			tok = malloc(sizeof(tok));
+			tok = realloc(sizeof(tok) + numOftok);
 			tok[i].start = i + 1;
 			
 			if((strchr(tok[i].start, '"') - ref) > (strchr(tok[i].start, ':') - ref) || strchr(tok[i].start, '"') == NULL)
@@ -90,4 +90,4 @@ void parseJSON(char* ref, int size, tok_t* tok)
 		}
 		}
 	}
-}*/
+}
