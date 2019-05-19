@@ -20,7 +20,7 @@ typedef struct _tok_t {
 int numOftok = 0;
 
 //void readFile(char* filename, char* doc, int* size);
-tok_t* parseJSON(char* ref, int size);
+void parseJSON(char* ref, int size, tok_t* tok);
 
 int main(int argc, char **argv)
 {
@@ -55,11 +55,13 @@ int main(int argc, char **argv)
 
 	//readFile(filename, doc, size);
 
-	tok = parseJSON(doc, size);
+	parseJSON(doc, size, tok);
+/*
 	for(int i = 0; i < numOftok; i++)
 	{
-		printf("tok[%d].start: %d, tok[%d].end: %d tok[%d].size: %d\n", i, tok[i].start, i, tok[i].end, i, tok[i].size);
+		printf("size: %d, tok[%d].start: %d, tok[%d].end: %d\n", tok[i].size, i, tok[i].start, i, tok[i].end);
 	}
+*/
 	free(doc);
 	free(tok);
 }
@@ -91,15 +93,14 @@ void readFile(char* filename, char* doc, int* size)
 	fclose(fp);
 }
 */
-tok_t* parseJSON(char* ref, int size)
+void parseJSON(char* ref, int size, tok_t* tok)
 {
-	tok_t* tok = NULL;
 	for (int i = 0; i < size; i++)
 	{
 		if (ref[0] != '{')
 		{
 			printf("Syntax error!");
-			return NULL;
+			return;
 		}
 
 		switch (ref[i])
@@ -109,13 +110,12 @@ tok_t* parseJSON(char* ref, int size)
 			tok = realloc(tok, sizeof(tok_t)*(numOftok+1));
 			tok[numOftok].type = STRING;
 			tok[numOftok].start = i + 1;
-			tok[numOftok].size = 0;
 
 			
 			if (strchr(ref + tok[numOftok].start, '"') == NULL)
 			{
 				printf("Syntax error!");
-				return NULL;
+				return;
 			}
 			else
 				tok[numOftok].end = strchr(ref + tok[numOftok].start, '"') - ref;
@@ -132,13 +132,12 @@ tok_t* parseJSON(char* ref, int size)
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
 			tok[numOftok].type = ARRAY;
 			tok[numOftok].start = i;
-			tok[numOftok].size = 0;
 
 			if (strchr(ref + tok[numOftok].start, ']') == NULL)
 			{
 				//free()
 				printf("Syntax error!");
-				return NULL;
+				return;
 			}
 			else
 				tok[numOftok].end = strchr(ref + tok[numOftok].start, ']') - ref;
@@ -158,12 +157,11 @@ tok_t* parseJSON(char* ref, int size)
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
 			tok[numOftok].type = OBJECT;
 			tok[numOftok].start = i;
-			tok[numOftok].size = 0;
 
 			if (strchr(ref + tok[numOftok].start, '}') == NULL)
 			{
 				printf("Syntax error!");
-				return NULL;
+				return;
 			}
 			else
 				tok[numOftok].end = strchr(ref + tok[numOftok].start, '}') - ref + 1;
@@ -181,16 +179,15 @@ tok_t* parseJSON(char* ref, int size)
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
 			tok[numOftok].type = PRIMITIVE;
 			tok[numOftok].start = i;
-			tok[numOftok].size = 0;
 
 			if (strchr(ref + tok[numOftok].start, ',') == NULL || strchr(ref + tok[numOftok].start, '}') == NULL)
 			{
 				//free()
 				printf("Syntax error!");
-				return NULL;
+				return;
 			}
 			else
-				tok[numOftok].end = strchr(ref + tok[numOftok].start, ',') - ref;
+				tok[numOftok].end = strchr(ref + tok[numOftok].start, '}') - ref;
 
 			//printf("tok[%d].start: %d, tok[%d].end: %d\n", numOftok, tok[numOftok].start, numOftok, tok[numOftok].end);
 
@@ -207,7 +204,7 @@ tok_t* parseJSON(char* ref, int size)
 		case '}':
 		{
 			printf("parsing compeleted!\n");
-			return tok;
+			return;
 		}
 		}
 	}
