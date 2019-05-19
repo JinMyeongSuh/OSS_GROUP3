@@ -1,0 +1,211 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef enum _type_t {
+	UNDEFINED = 0,
+	OBJECT = 1,
+	ARRAY = 2,
+	STRING = 3,
+	PRIMITIVE = 4
+} type_t;
+
+typedef struct _tok_t {
+	type_t type;
+	int start;
+	int end;
+	int size; // end - start + 1
+} tok_t;
+
+int numOftok = 0;
+
+//void readFile(char* filename, char* doc, int* size);
+void parseJSON(char* ref, int size, tok_t* tok);
+
+int main(int argc, char **argv)
+{
+	FILE* fp = fopen(argv[1], "r");
+
+        if (fp == NULL)
+        {
+                printf("Fail to open!\n");
+                return -1;
+        }
+
+        int size = 0;
+        char* doc = NULL;
+        tok_t* tok = NULL;
+
+
+        fseek(fp, 0, SEEK_END);
+
+        size = ftell(fp);
+
+        doc = malloc(sizeof(char)*(size + 1));
+
+        fseek(fp, 0, SEEK_SET);
+
+        fread(doc, size, sizeof(char), fp);
+
+        doc[size] = '\0';
+
+        printf("%s\n", doc);
+
+        fclose(fp);
+
+	//readFile(filename, doc, size);
+
+	parseJSON(doc, size, tok);
+/*
+	for(int i = 0; i < numOftok; i++)
+	{
+		printf("size: %d, tok[%d].start: %d, tok[%d].end: %d\n", tok[i].size, i, tok[i].start, i, tok[i].end);
+	}
+*/
+	free(doc);
+	free(tok);
+}
+/*
+void readFile(char* filename, char* doc, int* size)
+{
+	FILE* fp = fopen(filename, "r");
+
+	if (fp == NULL)
+	{
+		printf("Fail to open!\n");
+		return;
+	}
+
+	fseek(fp, 0, SEEK_END);
+
+	*size = ftell(fp);
+
+	doc = malloc(sizeof(char)*(*size + 1));
+
+	fseek(fp, 0, SEEK_SET);
+
+	fread(doc, *size, sizeof(char), fp);
+
+	doc[*size] = '\0';
+
+	printf("%s\n", doc);
+
+	fclose(fp);
+}
+*/
+void parseJSON(char* ref, int size, tok_t* tok)
+{
+	for (int i = 0; i < size; i++)
+	{
+		if (ref[0] != '{')
+		{
+			printf("Syntax error!");
+			return;
+		}
+
+		switch (ref[i])
+		{
+		case '"':
+		{
+			tok = realloc(tok, sizeof(tok_t)*(numOftok+1));
+			tok[numOftok].type = STRING;
+			tok[numOftok].start = i + 1;
+
+			
+			if (strchr(ref + tok[numOftok].start, '"') == NULL)
+			{
+				printf("Syntax error!");
+				return;
+			}
+			else
+				tok[numOftok].end = strchr(ref + tok[numOftok].start, '"') - ref;
+
+			i += tok[numOftok].end - tok[numOftok].start + 1;
+
+		//	printf("tok[%d].start: %d, tok[%d].end: %d\n", numOftok, tok[numOftok].start, numOftok, tok[numOftok].end);
+
+			numOftok++;
+		}
+		break;
+		case '[':
+		{
+			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
+			tok[numOftok].type = ARRAY;
+			tok[numOftok].start = i;
+
+			if (strchr(ref + tok[numOftok].start, ']') == NULL)
+			{
+				//free()
+				printf("Syntax error!");
+				return;
+			}
+			else
+				tok[numOftok].end = strchr(ref + tok[numOftok].start, ']') - ref;
+
+			i += tok[numOftok].end - tok[numOftok].start + 1;
+
+		//	printf("tok[%d].start: %d, tok[%d].end: %d\n", numOftok, tok[numOftok].start, numOftok, tok[numOftok].end);
+
+			numOftok++;
+		}
+		break;
+		case '{':
+		{
+			if (i == 0)
+				continue;
+
+			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
+			tok[numOftok].type = OBJECT;
+			tok[numOftok].start = i;
+
+			if (strchr(ref + tok[numOftok].start, '}') == NULL)
+			{
+				printf("Syntax error!");
+				return;
+			}
+			else
+				tok[numOftok].end = strchr(ref + tok[numOftok].start, '}') - ref + 1;
+
+			i += tok[numOftok].end - tok[numOftok].start + 1;
+
+		//	printf("tok[%d].start: %d, tok[%d].end: %d\n", numOftok, tok[numOftok].start, numOftok, tok[numOftok].end);
+
+			numOftok++;
+		}
+		break;
+		case '0': case '1': case '2': case '3': case '4': case '5':
+		case '6': case '7': case '8': case '9': case '-':
+		{
+			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
+			tok[numOftok].type = PRIMITIVE;
+			tok[numOftok].start = i;
+
+			if (strchr(ref + tok[numOftok].start, ',') == NULL || strchr(ref + tok[numOftok].start, '}') == NULL)
+			{
+				//free()
+				printf("Syntax error!");
+				return;
+			}
+			else
+				tok[numOftok].end = strchr(ref + tok[numOftok].start, '}') - ref;
+
+			//printf("tok[%d].start: %d, tok[%d].end: %d\n", numOftok, tok[numOftok].start, numOftok, tok[numOftok].end);
+
+			i += tok[numOftok].end - tok[numOftok].start + 1;
+
+			numOftok++;
+		}
+		break;
+		case ':':
+		{
+			tok[numOftok-1].size += 1;
+		}
+		break;
+		case '}':
+		{
+			printf("parsing compeleted!\n");
+			return;
+		}
+		}
+	}
+}
