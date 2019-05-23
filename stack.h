@@ -21,7 +21,7 @@ int IsFull(Stack *stack); //스택이 꽉 찼는지 확인
 
 int IsEmpty(Stack *stack); //스택이 비었는지 확인
 
-void Push(Stack *stack,int data); //스택에 보관
+void Push(Stack *stack,char data); //스택에 보관
 
 int Pop(Stack *stack); //스택에서 꺼냄
 
@@ -47,7 +47,7 @@ int IsEmpty(Stack *stack)
 
 }
 
-void Push(Stack *stack,int data)
+void Push(Stack *stack,char data)
 
 {
 
