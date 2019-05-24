@@ -30,7 +30,7 @@ void setValue(char* ref, tok_t* tok);
 
 int main(int argc, char **argv)
 {
-	FILE* fp = fopen("example.json", "r");
+	FILE* fp = fopen(argv[1], "r");
 
 	if (fp == NULL)
 	{
