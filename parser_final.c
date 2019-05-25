@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NUM_OF_TOK 1024
-
 typedef enum _type_t {
 	UNDEFINED = 0,
 	OBJECT = 1,
@@ -30,7 +28,7 @@ void setValue(char* ref, tok_t* tok);
 
 int main(int argc, char **argv)
 {
-	FILE* fp = fopen(argv[1], "r");
+	FILE* fp = fopen("example.json", "r");
 
 	if (fp == NULL)
 	{
@@ -70,12 +68,20 @@ int main(int argc, char **argv)
 
 
 	tok = parseJSON(doc, size, tok, 0);
-	setValue(doc, tok);
 
-	printTokInfo(tok);
-
+	if (tok != NULL)
+	{
+		setValue(doc, tok);
+		printTokInfo(tok);
+	}
+	for (int i = 0; i < numOftok; i++)
+	{
+		free(tok[i].value);
+	}
 	free(tok);
 	free(doc);
+
+	system("pause");
 }
 /*
 void readFile(char* filename, char** doc, int* size)
@@ -112,7 +118,6 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 		start = 0;
 	else
 		start = numOftok - 1;
-	//printf("%d\n", start);
 
 	tok_t* tok = origin;
 	for (int i = 0 + offset; i < size; i++)
@@ -136,42 +141,56 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 				printf("Syntax error!");
 				return NULL;
 			}
-			else
+			if (strchr(ref + tok[cur].start, '\\') == NULL || strchr(ref + tok[cur].start, '\\') > strchr(ref + tok[cur].start, '"'))
 			{
 				tok[cur].end = strchr(ref + tok[cur].start, '"') - ref - 1;
-				//printf("%d\n", strchr(ref + tok[cur].start, '"') - ref);
-				numOftok++;
 			}
+			else
+			{
+				int n = 0;
+				while (strchr(ref + tok[cur].start + n, '\\') != NULL || (strchr(ref + tok[cur].start + n, '\\') > strchr(ref + tok[cur].start + n, '"') && strchr(ref + tok[cur].start + n, '\\') != NULL))
+				{
+					n++;
+				}
+				tok[cur].end = strchr(ref + tok[cur].start + n + 1, '"') - ref - 1;
+			}
+			numOftok++;
 			i = tok[cur].end + 1;
 
-			//printf("tok[%d].start: %d, tok[%d].end: %d\n", cur, tok[cur].start, cur, tok[cur].end);
 		}
 		break;
 		case '[':
 		{
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
-			tok[cur].type = ARRAY;
 			tok[cur].start = i;
+			tok[cur].type = ARRAY;
 			tok[cur].size = 0;
 
-			if (strchr(ref + tok[cur].start, ']') == NULL)
+
+			if (strchr(ref + i, ']') == NULL)
 			{
+				free(tok);
 				printf("Syntax error!");
 				return NULL;
 			}
-			else
-			{
-				numOftok++;
-				tok[cur].end = strchr(ref + tok[cur].start, ']') - ref;
-				//parseJSON(ref, size, tok, tok[cur].start + 1);
-			}
+			numOftok++;
 
-			i = tok[cur].end + 1;
-
-			//printf("tok[%d].start: %d, tok[%d].end: %d\n", cur, tok[cur].start, cur, tok[cur].end);
-
+			tok = parseJSON(ref, size, tok, tok[cur].start + 1);
+			i = tok[cur].end;
+			tok[cur].size = numOftok - cur - 1;
+			if (cur == 0)
+				return tok;
 		}
 		break;
+		case ']':
+		{
+			for (int k = start + 1; k < numOftok; k++)
+			{
+				tok[start].size += tok[k].size;
+			}
+			tok[start].end = i;
+			return tok;
+		}
 		case '{':
 		{
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
@@ -182,64 +201,17 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 
 			if (strchr(ref + i, '}') == NULL)
 			{
+				free(tok);
 				printf("Syntax error!");
 				return NULL;
 			}
 			numOftok++;
 
-			if (strchr(ref + i + 1, '{') == NULL)
-			{
-				tok[cur].end = strchr(ref + i, '}') - ref;
-
-				//printf("tok[%d].start: %d, tok[%d].end: %d\n", cur, tok[cur].start, cur, tok[cur].end);
-				tok = parseJSON(ref, size, tok, tok[cur].start + 1);
-				//i = tok[cur].end;
-				i = tok[cur].end;
-				if(cur == 0)
-					return tok;
-				break;
-			}
-			else if (strchr(ref + i, '{') != NULL)
-			{
-				//tok[cur].end = 1;
-				//printf("tok[%d].start: %d, tok[%d].end: %d\n", cur, tok[cur].start, cur, tok[cur].end);
-				tok = parseJSON(ref, size, tok, tok[cur].start + 1);
-				i = tok[cur].end;
-				if (cur == 0)
-					return tok;
-				break;
-			}
-
-			//printf("tok[%d].start: %d, tok[%d].end: %d\n", cur, tok[cur].start, cur, tok[cur].end);
-
-		}
-		break;
-		case '0': case '1': case '2': case '3': case '4': case '5':
-		case '6': case '7': case '8': case '9': case '-':
-		{
-			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
-			tok[cur].type = PRIMITIVE;
-			tok[cur].start = i;
-			tok[cur].size = 0;
-
-			if (strchr(ref + tok[numOftok].start, ',') == NULL || strchr(ref + tok[numOftok].start, '}') == NULL)
-			{
-				free(&tok[cur]);
-				printf("Syntax error!");
-				return NULL;
-			}
-			else
-			{
-				numOftok++;
-				tok[cur].end = strchr(ref + tok[cur].start, ',') - ref - 1;
-			}
-			i = tok[cur].end + 1;
-		}
-		break;
-		case ':':
-		{
-			if (tok[numOftok - 1].type == STRING || tok[numOftok - 1].type == PRIMITIVE)
-				tok[numOftok - 1].size += 1;
+			tok = parseJSON(ref, size, tok, tok[cur].start + 1);
+			i = tok[cur].end;
+			if (cur == 0)
+				return tok;
+			break;
 		}
 		break;
 		case '}':
@@ -251,6 +223,35 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 			tok[start].end = i;
 			return tok;
 		}
+		case '0': case '1': case '2': case '3': case '4': case '5':
+		case '6': case '7': case '8': case '9': case '-':
+		{
+			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
+			tok[cur].type = PRIMITIVE;
+			tok[cur].start = i;
+			tok[cur].size = 0;
+
+			if (strchr(ref + tok[numOftok].start, ',') == NULL || strchr(ref + tok[numOftok].start, '}') == NULL)
+			{
+				free(tok);
+				printf("Syntax error!");
+				return NULL;
+			}
+			else
+			{
+				tok[cur].end = strchr(ref + tok[cur].start, ',') - ref - 1;
+				numOftok++;
+			}
+			i = tok[cur].end + 1;
+
+		}
+		break;
+		case ':':
+		{
+			if (tok[numOftok - 1].type == STRING || tok[numOftok - 1].type == PRIMITIVE)
+				tok[numOftok - 1].size += 1;
+		}
+		break;
 		}
 	}
 }
