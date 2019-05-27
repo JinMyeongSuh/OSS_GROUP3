@@ -1,3 +1,15 @@
 {
-	"asdfa":"asdfasdfa"
+	"asdfa":"asdfa\"sd\"fa",
+	"object" : 
+	{
+		"good life":
+		{
+			"plz": "help",
+			["asdfasdf"]
+		},
+		"array" :
+		[
+			"asdfasdf", "asdfasf", ["Happy", "OSS", "!"], 1 
+		]
+	}
 }
