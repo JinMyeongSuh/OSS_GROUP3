@@ -18,11 +18,19 @@ typedef struct _tok_t {
 	char* value;
 } tok_t;
 
+typedef struct _Food{
+	char* name;
+	int cost;
+} Food;
+
 int numOftok = 0;
 
 tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset);
-void printTokInfo(tok_t* tok);
 void setValue(char* ref, tok_t* tok);
+void printTokInfo(tok_t* tok);
+void application(tok_t* tok);
+int cmp(const void* first, const void* second);
+int knapsack_Greedy(Food* food, int numOffood, int priceLimit, int origin_charge);
 
 int main(int argc, char **argv)
 {
@@ -38,8 +46,6 @@ int main(int argc, char **argv)
 	char* doc = NULL;
 	tok_t* tok = NULL;
 
-	//	readFile(argv[1], &doc, &size);
-
 	fseek(fp, 0, SEEK_END);
 
 	size = ftell(fp);
@@ -52,8 +58,6 @@ int main(int argc, char **argv)
 
 	doc[size] = '\0';
 
-	printf("%s\n", doc);
-
 	fclose(fp);
 
 
@@ -62,9 +66,11 @@ int main(int argc, char **argv)
 	if (tok != NULL)
 	{
 		setValue(doc, tok);
-		//setSize(doc, tok);
-		printTokInfo(tok);
+		//printTokInfo(tok);
 	}
+
+ 	application(tok);
+
 	for (int i = 0; i < numOftok; i++)
 	{
 		free(tok[i].value);
@@ -72,34 +78,6 @@ int main(int argc, char **argv)
 	free(tok);
 	free(doc);
 }
-/*
-void readFile(char* filename, char** doc, int* size)
-{
-	FILE* fp = fopen(filename, "r");
-
-	if (fp == NULL)
-	{
-		printf("Fail to open!\n");
-		return;
-	}
-
-	fseek(fp, 0, SEEK_END);
-
-	*size = ftell(fp);
-
-	doc = malloc(sizeof(char)*(*size + 1));
-
-	fseek(fp, 0, SEEK_SET);
-
-	fread(*doc, *size, sizeof(char), fp);
-
-	doc[*size] = '\0';
-
-	printf("%s\n", doc);
-
-	fclose(fp);
-}
-*/
 tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 {
 	int start = 0;
@@ -354,6 +332,108 @@ void printTokInfo(tok_t* tok)
 		}
 		break;
 		}
+	}
+}
+int cmp(const void* A, const void* B)
+{
+	Food* pA = (Food*)A;
+	Food* pB = (Food*)B;
+
+	int r1 = pA->cost;
+	int r2 = pB->cost;
+
+	if(r1 > r2)
+		return -1;
+	if(r1 < r2)
+		return 1;
+	else
+		return 0;
+}
+int knapsack_Greedy(Food* food, int numOffood, int priceLimit, int origin_charge)
+{
+	int total_Price = 0.f;
+	float off = 0.f;
+	switch(origin_charge)
+	{
+		case 650000:
+		{
+			off = 0.87;
+		}
+		break;
+		case 550000:
+		{
+			off = 0.89;
+		}
+		break;
+		case 450000:
+		{
+			off = 0.91;
+		}
+		break;
+		case 350000:
+		{
+			off = 0.94;
+		}
+		break;
+		case 250000:
+		{
+			off = 0.97;
+		}
+		break;
+	}
+	int i = 0;
+	for(int i = 0; i < 19; i++)
+	{
+		if((float)food[i].cost*off > priceLimit || food[i].cost*off > priceLimit - total_Price)
+		{
+			continue;
+		}
+		if(food[i].cost*off <= priceLimit - total_Price)
+		{
+			total_Price = food[i].cost*off + total_Price;
+			printf("You could eat ");
+			printf("%s(price:%0.f).\n", food[i].name, food[i].cost*off);
+			i++;
+			if(i == 18)
+				i -= 18;
+		}
 
 	}
+	if(total_Price == 0)
+		return priceLimit;
+	else
+		return total_Price;
+}
+
+void application(tok_t* tok)
+{
+	int bal = 0;
+	int origin = 0;
+	Food* food;
+
+	food = malloc(sizeof(Food)*19);
+
+	int j = 0;
+	for(int i = 1; i < numOftok - 2; i++)
+	{
+		if(strcmp(tok[i-1].value, "name") == 0)
+		{
+			food[j].name = tok[i].value;
+			food[j].cost = atoi(tok[i+2].value);
+			j++;
+		}
+	}
+
+	printf("Please input your balance: ");
+	scanf("%d", &bal);
+	printf("Please input your original charge: ");
+	scanf("%d", &origin);
+	qsort(food, 19, sizeof(Food), cmp);
+	
+	int pp = 0;
+	pp = knapsack_Greedy(food, 19, bal, origin);
+
+	printf("Total Price: %d\n", pp);
+	printf("balance: %d\n", bal - pp);
+	free(food);
 }
