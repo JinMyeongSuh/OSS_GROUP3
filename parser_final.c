@@ -14,16 +14,14 @@ typedef struct _tok_t {
 	type_t type;
 	int start;
 	int end;
-	int size; // end - start + 1
+	int size;
 	char* value;
 } tok_t;
 
 int numOftok = 0;
 
-//void readFile(char* filename, char** doc, int* size);
 tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset);
 void printTokInfo(tok_t* tok);
-//void freeResource(void* addr);
 void setValue(char* ref, tok_t* tok);
 
 int main(int argc, char **argv)
@@ -64,6 +62,7 @@ int main(int argc, char **argv)
 	if (tok != NULL)
 	{
 		setValue(doc, tok);
+		//setSize(doc, tok);
 		printTokInfo(tok);
 	}
 	for (int i = 0; i < numOftok; i++)
@@ -173,16 +172,30 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 				return NULL;
 			}
 			i = tok[cur].end;
-			tok[cur].size = numOftok - cur - 1;
 			if (cur == 0)
 				return tok;
 		}
 		break;
 		case ']':
 		{
-			for (int k = start + 1; k < numOftok; k++)
+			for(int k = start + 1; k < numOftok; k++)
 			{
-				tok[start].size += tok[k].size;
+                                if(tok[k].type == OBJECT || tok[k].type == ARRAY)
+				{
+					int bound = tok[k].end;
+					if(tok[k - 1].type != STRING && tok[k - 1].size == 0)
+                                        	tok[start].size += 1;
+					while(bound >= tok[k].start)
+					{
+						k++;
+					}
+					k -= 1;
+				}
+				else
+				{
+                                        tok[start].size += tok[k].size;
+				}
+
 			}
 			tok[start].end = i;
 			return tok;
@@ -218,15 +231,32 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 		break;
 		case '}':
 		{
-			for (int k = start + 1; k < numOftok; k++)
-			{
-				tok[start].size += tok[k].size;
-			}
+	
+			for(int k = start + 1; k < numOftok; k++)
+                        {
+                                if(tok[k].type == OBJECT || tok[k].type == ARRAY)
+                                {
+                                        int bound = tok[k].end;
+					if(tok[k - 1].type != STRING && tok[k - 1].size == 0)
+                                        	tok[start].size += 1;
+                                        while(bound >= tok[k].start)
+                                        {
+                                                k++;
+                                        }
+					k -= 1;
+                                }
+                                else
+                                {
+                                        tok[start].size += tok[k].size;
+                                }
+                        }
+
 			tok[start].end = i;
 			return tok;
 		}
 		case '0': case '1': case '2': case '3': case '4': case '5':
-		case '6': case '7': case '8': case '9': case '-':
+		case '6': case '7': case '8': case '9': case '-': case 't':
+		case 'T': case 'f': case 'F':
 		{
 			tok = realloc(tok, sizeof(tok_t)*(numOftok + 1));
 			tok[cur].type = PRIMITIVE;
@@ -253,7 +283,9 @@ tok_t* parseJSON(char* ref, int size, tok_t* origin, int offset)
 					{
 					case '0': case '1': case '2': case '3': case '4': case '5':
 					case '6': case '7': case '8': case '9': case '-': case '.':
-					case 'e': case 'E': case '+':
+					case 'e': case 'E': case '+': case 'r': case 'R': case 'u':
+					case 'U': case 'a': case 'A': case 'l': case 'L': case 's':
+					case 'S':
 					break;
 					default:
 					{
@@ -283,16 +315,45 @@ void setValue(char* ref, tok_t* tok)
 {
 	for (int i = 0; i < numOftok; i++)
 	{
-		tok[i].value = malloc(sizeof(char)*(tok[i].end - tok[i].start + 2));
+		tok[i].value = malloc(sizeof(char)*(tok[i].end - tok[i].start + 1));
 		strncpy(tok[i].value, ref + tok[i].start, tok[i].end - tok[i].start + 1);
 		tok[i].value[tok[i].end - tok[i].start + 1] = '\0';
+		tok[i].end += 1;
 	}
 }
 void printTokInfo(tok_t* tok)
 {
+
 	for (int i = 0; i < numOftok; i++)
 	{
-		printf("tok[%d].start: %d, tok[%d].end: %d tok[%d].size: %d\n", i, tok[i].start, i, tok[i].end, i, tok[i].size);
-		printf("tok[%d].value: %s\n", i, tok[i].value);
+		switch(tok[i].type)
+		{
+		case 0:
+		{
+			printf("[%d] %s (size=%d, %d~%d, UNDEFINED)\n", i, tok[i].value, tok[i].size, tok[i].start, tok[i].end);
+		}
+		break;
+		case 1:
+		{
+			printf("[%d] %s (size=%d, %d~%d, OBJECT)\n", i, tok[i].value, tok[i].size, tok[i].start, tok[i].end);
+		}
+		break;
+		case 2:
+		{
+			printf("[%d] %s (size=%d, %d~%d, ARRAY)\n", i, tok[i].value, tok[i].size, tok[i].start, tok[i].end);
+		}
+		break;
+		case 3:
+		{
+			printf("[%d] %s (size=%d, %d~%d, STRING)\n", i, tok[i].value, tok[i].size, tok[i].start, tok[i].end);
+		}
+		break;
+		case 4:
+		{
+			printf("[%d] %s (size=%d, %d~%d, PRIMITIVE)\n", i, tok[i].value, tok[i].size, tok[i].start, tok[i].end);
+		}
+		break;
+		}
+
 	}
 }
